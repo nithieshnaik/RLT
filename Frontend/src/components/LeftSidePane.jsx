@@ -20,8 +20,8 @@ const LeftSidePane = () => {
     const isActive = (menuItem) => activeItem === menuItem;
 
     return (
-        <div className="ml-30 flex justify-center items-center w-1/6 " >
-            <div className="mt-18 flex flex-col justify-between items-start w-full bg-red-500 text-white rounded-r-3xl rounded-l-3xl py-6 px-4" style={{ height: "80vh" }}>
+        <div className="ml-35 flex justify-center items-center w-1/6 " >
+            <div className="mt-15 flex flex-col justify-between items-start w-full bg-red-500 text-white rounded-r-3xl rounded-l-3xl py-6 px-4" style={{ height: "80vh" }}>
                 {/* Upper Div */}
                 <div className="mb-7 flex items-center gap-2 px-4 py-2 w-full">
                     <div className="bg-white rounded-full h-8 w-8 flex items-center justify-center text-blue-900 font-bold">
@@ -31,7 +31,7 @@ const LeftSidePane = () => {
                 </div>
 
                 {/* Middle Div */}
-                <div className="flex flex-col w-full gap-1">
+                <div className="flex flex-col w-full">
                     <div
                         className={`flex items-center gap-2 px-4 py-2 mx-2 cursor-pointer rounded-lg transition duration-200 ${isActive('Home') ? 'bg-white text-black' : 'hover:bg-red-600'
                             }`}
