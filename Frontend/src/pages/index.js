@@ -1,4 +1,3 @@
-import Login from "./Login.jsx";
-import Signup from "./Signup.jsx";
+import {Home, Login, Signup, Setting, Report, AgentDetails, CallTranslate} from "../pages"
 
-export default { Login, Signup };
+export default { Home,Login, Signup, Setting, Report, AgentDetails, CallTranslate };
