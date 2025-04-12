@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import BackgroundImage from '../assets/backgroundImage.png'
 import communication from '../assets/communication.png'
 import '../components/ToggleButton.css'
@@ -7,6 +8,7 @@ import '../components/ToggleButton.css'
 const Login = () => {
 
     const [isToggled, setIsToggled] = useState(false);
+    const navigate = useNavigate();
 
     const handleToggle = () => {
         setIsToggled(!isToggled);
@@ -25,7 +27,7 @@ const Login = () => {
                     <div className='w-1/2 flex flex-col px-4 py-2 relative'>
                         {/* Sign up button */}
                         <div className='absolute top-2 right-2'>
-                            <button className='px-2 py-1 mt-2 mr-2 bg-gray-50 rounded-lg text-black text-xs font-medium shadow-sm'>
+                            <button onClick={() => navigate('/signup')} className='px-2 py-1 mt-2 mr-2 bg-gray-50 rounded-lg text-black text-xs font-medium shadow-sm'>
                                 Sign up
                             </button>
                         </div>
@@ -72,7 +74,7 @@ const Login = () => {
                                     <span className='text-xs text-gray-700'>Forgot Password ?</span>
                                 </div>
 
-                                <button type="submit" className='bg-red-500 hover:bg-red-600 text-white font-medium text-sm py-1.5 rounded-full mb-2'>
+                                <button onClick={()=>navigate('/home')} type="submit" className='bg-red-500 hover:bg-red-600 text-white font-medium text-sm py-1.5 rounded-full mb-2'>
                                     Login
                                 </button>
 
