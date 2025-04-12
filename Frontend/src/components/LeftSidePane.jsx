@@ -22,8 +22,8 @@ const LeftSidePane = () => {
     const isActive = (menuItem) => activeItem === menuItem;
 
     return (
-        <div className="ml-32 flex justify-center items-center w-1/6 " >
-            <div className="mt-7 flex flex-col justify-between items-start w-full bg-red-500 text-white rounded-r-3xl rounded-l-3xl py-4 px-4" style={{ height: "80vh" }}>
+        <div className="ml-42 flex justify-center items-center w-1/6 " >
+            <div className="mt-7 flex flex-col justify-between items-start w-full bg-red-500 text-white rounded-r-3xl rounded-l-3xl py-4 px-4" style={{ height: "72vh" }}>
                 {/* Upper Div */}
                 <div onClick={()=>navigate('/profile')}className="mb-7 flex items-center gap-2 px-4 py-2 w-full">
                     <div className="bg-white rounded-full h-8 w-8 flex items-center justify-center text-blue-900 font-bold">
