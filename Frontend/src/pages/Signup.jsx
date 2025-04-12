@@ -1,9 +1,11 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import BackgroundImage from '../assets/backgroundImage.png'
 import videocall from '../assets/video-call.png'
 import '../components/ToggleButton.css'
 
 const Signup = () => {
+    const navigate = useNavigate()
 
     return (
         <div className='relative bg-no-repeat bg-cover' style={{ backgroundImage: `url(${BackgroundImage})`, height: "100vh", width: "100vw" }}>
@@ -13,7 +15,7 @@ const Signup = () => {
                     <div className='w-2/5 p-6 ml-15 relative'>
                         <div className='absolute top-2 right-2'>
                             <button 
-                                className='px-3 py-1 border border-gray-300 rounded-lg shadow-md text-xl font-medium'
+                                onClick={()=>navigate('/login')} className='px-3 py-1 border border-gray-300 rounded-lg shadow-md text-xl font-medium'
                             >
                                 Log in
                             </button>
