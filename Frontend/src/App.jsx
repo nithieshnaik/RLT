@@ -8,7 +8,7 @@ import Setting from './pages/Setting'
 import Report from './pages/Report'
 import AgentDetails from './pages/AgentDetails'
 import CallTranslate from './pages/CallTranslate'
-
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 
 
 const App = () => {
@@ -16,18 +16,21 @@ const App = () => {
     <>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Login />} />
-          <Route path="/home" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/setting" element={<Setting />} />
-          <Route path="/report" element={<Report />} /> 
-          <Route path="/agentdetails" element={<AgentDetails />} />
-          <Route path="/calltranslate" element={<CallTranslate />} />
           
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/setting" element={<Setting />} />
+            <Route path="/report" element={<Report />} /> 
+            <Route path="/agentdetails" element={<AgentDetails />} />
+            <Route path="/calltranslate" element={<CallTranslate />} />
+          </Route>
         </Routes>
       </BrowserRouter>
-      {/* <LeftSidePane /> */}
     </>
   )
 }
