@@ -6,7 +6,7 @@ import Signup from './pages/Signup'
 import Home from './pages/Home'
 import Setting from './pages/Setting'
 import Report from './pages/Report'
-import AgentDetails from './pages/AgentDetails'
+import AgentDetails from './pages/CallDetails.jsx'
 import CallTranslate from './pages/CallTranslate'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 
