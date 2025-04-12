@@ -78,7 +78,7 @@ const CallDetails = () => {
                                     A1
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold mb-2">Agent 1</h2>
+                                    <h2 className="text-2xl font-bold mb-2">Call 1</h2>
                                     <div>
                                         <p><span className="font-medium">Call Duration :</span> 45 mins</p>
                                         <p><span className="font-medium">Language :</span> English</p>
@@ -101,7 +101,7 @@ const CallDetails = () => {
                                     A1
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold mb-2">Agent 2</h2>
+                                    <h2 className="text-2xl font-bold mb-2">Call 2</h2>
                                     <div>
                                         <p><span className="font-medium">Call Duration :</span> 45 mins</p>
                                         <p><span className="font-medium">Language :</span> English</p>
