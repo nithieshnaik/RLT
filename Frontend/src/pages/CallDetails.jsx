@@ -17,7 +17,7 @@ const CallDetails = () => {
             <div className="flex-1 p-5 flex flex-col mb-10">
                 {/* Header */}
                 <div className="flex justify-normal items-center mt-15">
-                    <h1 className="text-4xl font-bold text-navy-900">Call Details</h1>
+                    <h1 className="text-4xl font-bold " style={{color: "#1C398E"}}>Call Details</h1>
                     {/* Language Dropdown */}
                     <div className="relative inline-block text-left ml-5">
                         <select
