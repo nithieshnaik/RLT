@@ -1,11 +1,52 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BackgroundImage from '../assets/backgroundImage.png'
 import videocall from '../assets/video-call.png'
 import '../components/ToggleButton.css'
+import axios from 'axios'
 
 const Signup = () => {
-    const navigate = useNavigate()
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const handleSignup = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const response = await axios.post('http://localhost:5000/api/users', {
+                name: fullName,
+                email,
+                password,
+                phone
+            });
+
+            // Store token in localStorage
+            if (response.data.token) {
+                localStorage.setItem('userToken', response.data.token);
+                localStorage.setItem('userData', JSON.stringify(response.data));
+                navigate('/home');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className='relative bg-no-repeat bg-cover' style={{ backgroundImage: `url(${BackgroundImage})`, height: "100vh", width: "100vw" }}>
@@ -15,7 +56,8 @@ const Signup = () => {
                     <div className='w-2/5 p-6 ml-15 relative'>
                         <div className='absolute top-2 right-2'>
                             <button 
-                                onClick={()=>navigate('/login')} className='px-3 py-1 border border-gray-300 rounded-lg shadow-md text-xl font-medium'
+                                onClick={()=>navigate('/login')} 
+                                className='px-3 py-1 border border-gray-300 rounded-lg shadow-md text-xl font-medium'
                             >
                                 Log in
                             </button>
@@ -23,16 +65,25 @@ const Signup = () => {
                         
                         <div className='mt-1 mb-2'>
                             <h1 className='text-3xl font-bold'>Create an account !</h1>
-                            <p className='text-gray-600 text-xs mt-0.5 mb-2'style={{fontSize: "18px", fontWeight: 600}}>Enter your Details</p>
+                            <p className='text-gray-600 text-xs mt-0.5 mb-2' style={{fontSize: "18px", fontWeight: 600}}>Enter your Details</p>
                         </div>
+
+                        {error && (
+                            <div className='mb-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm'>
+                                {error}
+                            </div>
+                        )}
                         
-                        <form className='flex flex-col space-y-2'>
+                        <form onSubmit={handleSignup} className='flex flex-col space-y-2'>
                             <div>
                                 <label className='text-medium font-medium'>Full Name</label>
                                 <div className='relative mt-0.5'>
                                     <input
                                         type="text"
                                         className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm'
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -48,6 +99,9 @@ const Signup = () => {
                                     <input
                                         type="email"
                                         className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm'
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,6 +117,9 @@ const Signup = () => {
                                     <input
                                         type="tel"
                                         className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm'
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,6 +135,9 @@ const Signup = () => {
                                     <input
                                         type="password"
                                         className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm'
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,6 +153,9 @@ const Signup = () => {
                                     <input
                                         type="password"
                                         className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm'
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,9 +168,10 @@ const Signup = () => {
                             <div className='pt-2'>
                                 <button 
                                     type="submit" 
+                                    disabled={isLoading}
                                     className='w-full bg-red-500 hover:bg-red-600 text-white text-xl font-bold py-1.5 rounded-full'
                                 >
-                                    Sign Up
+                                    {isLoading ? 'Creating Account...' : 'Sign Up'}
                                 </button>
                             </div>
                         </form>

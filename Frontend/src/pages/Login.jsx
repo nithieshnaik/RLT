@@ -3,15 +3,49 @@ import { useNavigate } from 'react-router-dom'
 import BackgroundImage from '../assets/backgroundImage.png'
 import communication from '../assets/communication.png'
 import '../components/ToggleButton.css'
-
+import axios from 'axios'
 
 const Login = () => {
-
     const [isToggled, setIsToggled] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleToggle = () => {
         setIsToggled(!isToggled);
+    }
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        try {
+            const response = await axios.post('http://localhost:5000/api/users/login', {
+                email,
+                password
+            });
+
+            // Store the token in localStorage
+            if (response.data.token) {
+                localStorage.setItem('userToken', response.data.token);
+                localStorage.setItem('userData', JSON.stringify(response.data));
+                
+                // If remember me is toggled, set a longer expiration
+                if (isToggled) {
+                    // The token itself has an expiration, this is just to track the user preference
+                    localStorage.setItem('rememberMe', 'true');
+                }
+                
+                navigate('/home');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -34,14 +68,24 @@ const Login = () => {
 
                         <div className='mt-12 mr-6'>
                             <h1 className='text-xl font-bold'>Welcome Back !</h1>
-                            <p className='text-gray-600  mt-0.1 mb-2 ' style={{fontSize: "10px", fontWeight: 600}}>Enter your email and password</p>
+                            <p className='text-gray-600 mt-0.1 mb-2' style={{fontSize: "10px", fontWeight: 600}}>Enter your email and password</p>
 
-                            <div className='flex flex-col'>
+                            {error && (
+                                <div className='mb-2 p-1 bg-red-100 border border-red-400 text-red-700 rounded text-xs'>
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleLogin} className='flex flex-col'>
                                 <label className='text-gray-700 text-sm font-medium'>Email</label>
                                 <div className='relative mb-1'>
                                     <input
                                         type="email"
-                                        className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm' style={{height: "28px"}}
+                                        className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm'
+                                        style={{height: "28px"}}
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -54,7 +98,11 @@ const Login = () => {
                                 <div className='relative mb-2'>
                                     <input
                                         type="password"
-                                        className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm h-6' style={{height: "28px"}}
+                                        className='w-full py-1.5 px-2 border border-gray-300 rounded-md text-sm h-6'
+                                        style={{height: "28px"}}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
                                     />
                                     <div className='absolute right-2 top-1.5 text-gray-500'>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,8 +122,12 @@ const Login = () => {
                                     <span className='text-xs text-gray-700'>Forgot Password ?</span>
                                 </div>
 
-                                <button onClick={()=>navigate('/home')} type="submit" className='bg-red-500 hover:bg-red-600 text-white font-medium text-sm py-1.5 rounded-full mb-2'>
-                                    Login
+                                <button 
+                                    type="submit"
+                                    disabled={isLoading} 
+                                    className='bg-red-500 hover:bg-red-600 text-white font-medium text-sm py-1.5 rounded-full mb-2'
+                                >
+                                    {isLoading ? 'Logging in...' : 'Login'}
                                 </button>
 
                                 <div className='text-center'>
@@ -86,7 +138,7 @@ const Login = () => {
                                     </div>
 
                                     <div className='flex justify-center gap-2 mt-1.5'>
-                                        <button className='flex items-center justify-center px-2 py-1 border border-gray-200 rounded-full shadow-sm text-xs'>
+                                        <button type="button" className='flex items-center justify-center px-2 py-1 border border-gray-200 rounded-full shadow-sm text-xs'>
                                             <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24">
                                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -95,7 +147,7 @@ const Login = () => {
                                             </svg>
                                             Google
                                         </button>
-                                        <button className='flex items-center justify-center px-2 py-1 border border-gray-200 rounded-full shadow-sm text-xs'>
+                                        <button type="button" className='flex items-center justify-center px-2 py-1 border border-gray-200 rounded-full shadow-sm text-xs'>
                                             <svg className="w-3 h-3 mr-1" viewBox="0 0 23 23">
                                                 <rect x="1" y="1" width="10" height="10" fill="#f25022" />
                                                 <rect x="12" y="1" width="10" height="10" fill="#7fba00" />
@@ -106,7 +158,7 @@ const Login = () => {
                                         </button>
                                     </div>
                                 </div>
-                            </div>
+                            </form>
                         </div>
                     </div>
                 </div>
