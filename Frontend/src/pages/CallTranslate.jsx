@@ -137,28 +137,28 @@ const CallTranslate = () => {
                                 </div>
 
                                 <div className="mb-4 flex">
-                                    <div className="bg-red-500 text-white rounded-full w-8 ह-8 flex items-center justify-center mr-2 flex-shrink-0">A</div>
+                                    <div className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0">A</div>
                                     <div className="flex-1">
                                         <p>नमस्ते! मैं मील प्रेप में आपकी मदद करने में खुशी महसूस करूंगा। आप किस प्रकार के भोजन की तलाश कर रहे हैं? कोई आहार संबंधी प्राथमिकताएं या प्रतिबंध हैं जिनके बारे में मुझे जानना चाहिए?</p>
                                     </div>
                                 </div>
 
                                 <div className="mb-4 flex">
-                                    <div className="bg-blue-900 text-white rounded-full w-8 ह-8 flex items-center justify-center mr-2 flex-shrink-0">P</div>
+                                    <div className="bg-blue-900 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0">P</div>
                                     <div className="flex-1">
                                         <p>मैं अधिक सब्जियां खाने की कोशिश कर रहा हूं, और शाम को खाना पकाने के लिए मेरे पास ज्यादा समय नहीं है</p>
                                     </div>
                                 </div>
 
                                 <div className="mb-4 flex">
-                                    <div className="bg-red-500 text-white rounded-full w-8 ह-8 flex items-center justify-center mr-2 flex-shrink-0">A</div>
+                                    <div className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0">A</div>
                                     <div className="flex-1">
                                         <p>यह समझ में आता है! आप रविवार को मिश्रित सब्जियों का एक बड़ा बैच रोस्ट करके पूरे सप्ताह पर उपयोग कर सकते हैं। जल्दी भोजन के लिए उन्हें पूर्व पके हुए प्रोटीन जैसे रोटिसरी चिकन या टिनबंद फलियों के साथ जोड़ें</p>
                                     </div>
                                 </div>
 
                                 <div className="flex">
-                                    <div className="bg-blue-900 text-white rounded-full w-8 ह-8 flex items-center justify-center mr-2 flex-shrink-0">P</div>
+                                    <div className="bg-blue-900 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0">P</div>
                                     <div className="flex-1">
                                         <p>यह एक अच्छा विचार है!</p>
                                     </div>
