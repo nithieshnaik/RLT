@@ -1,10 +1,9 @@
-// src/app.js (updated)
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const morgan = require('morgan'); // For logging HTTP requests
 
-// Import routes - Check for errors here
+// Import routes
 let userRoutes, homeRoutes, callRoutes, transcriptionRoutes;
 
 try {
@@ -12,7 +11,6 @@ try {
   console.log('User routes loaded successfully');
 } catch (error) {
   console.error('Error loading user routes:', error);
-  // Create a minimal route if the import fails
   const router = express.Router();
   router.get('/', (req, res) => res.status(500).json({ error: 'User routes not available' }));
   userRoutes = router;
@@ -39,12 +37,16 @@ try {
 }
 
 try {
+  // Explicit path to ensure correct loading
   transcriptionRoutes = require('./routes/transcriptionRoutes');
   console.log('Transcription routes loaded successfully');
 } catch (error) {
   console.error('Error loading transcription routes:', error);
+  console.error('Detailed error:', error.stack);
   const router = express.Router();
   router.get('/', (req, res) => res.status(500).json({ error: 'Transcription routes not available' }));
+  router.post('/transcribe', (req, res) => res.status(500).json({ error: 'Transcription endpoint not available', details: error.message }));
+  router.post('/translate', (req, res) => res.status(500).json({ error: 'Translation endpoint not available', details: error.message }));
   transcriptionRoutes = router;
 }
 
@@ -52,7 +54,7 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));  // Increased limit for audio files
+app.use(express.json({ limit: '50mb' })); // Increased limit for audio files
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Request logging in development
@@ -67,7 +69,19 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api', homeRoutes);
 app.use('/api/calls', callRoutes);
-app.use('/api', transcriptionRoutes);  // New transcription routes
+
+// Explicitly register transcription routes
+console.log('Registering transcription routes at /api/transcription');
+app.use('/api/transcription', transcriptionRoutes);
+
+// Add a test route for transcription to verify it's working
+app.get('/api/test-transcription', (req, res) => {
+  res.json({ 
+    status: 'Transcription routes test endpoint', 
+    message: 'If you see this, the server is working correctly',
+    routesLoaded: !!transcriptionRoutes
+  });
+});
 
 // Root route
 app.get('/', (req, res) => {

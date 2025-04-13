@@ -1,20 +1,13 @@
-// controllers/transcriptionController.js
 const asyncHandler = require('express-async-handler');
-const axios = require('axios');
 const fs = require('fs');
-const util = require('util');
-const path = require('path');
-const { Storage } = require('@google-cloud/storage');
+const axios = require('axios');
 const { SpeechClient } = require('@google-cloud/speech');
-const { TranslationServiceClient } = require('@google-cloud/translate');
 
 // Set up Google Cloud clients
 const speechClient = new SpeechClient();
-const translationClient = new TranslationServiceClient();
 
-// Google Cloud project info
-const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
-const location = 'global';
+// LibreTranslate configuration
+const libreTranslateEndpoint = process.env.LIBRE_TRANSLATE_ENDPOINT || 'http://localhost:5000';
 
 // Transcribe audio using Google Cloud Speech-to-Text
 const transcribeAudio = asyncHandler(async (req, res) => {
@@ -31,16 +24,20 @@ const transcribeAudio = asyncHandler(async (req, res) => {
       // If file was uploaded using multer
       const filePath = req.file.path;
       audioContent = fs.readFileSync(filePath);
+      console.log(`File read from path: ${filePath}, size: ${audioContent.length} bytes`);
     } else if (req.body.audioData) {
       // If audio data was sent directly in the request
       const base64Data = req.body.audioData.replace(/^data:audio\/\w+;base64,/, '');
       audioContent = Buffer.from(base64Data, 'base64');
+      console.log(`Base64 data received, size: ${audioContent.length} bytes`);
     }
     
     // Determine audio file encoding and sample rate from request or default values
     const encoding = req.body.encoding || 'WEBM_OPUS';
     const sampleRateHertz = parseInt(req.body.sampleRate) || 48000;
     const languageCode = req.body.languageCode || 'en-US';
+    
+    console.log(`Processing audio with encoding: ${encoding}, sample rate: ${sampleRateHertz}, language: ${languageCode}`);
     
     // Configure request
     const request = {
@@ -64,57 +61,84 @@ const transcribeAudio = asyncHandler(async (req, res) => {
       .map(result => result.alternatives[0].transcript)
       .join('\n');
     
+    console.log(`Transcription successful: "${transcription.substring(0, 50)}..."`);
+    
     res.json({
       success: true,
-      transcription,
+      text: transcription,
       languageCode,
     });
   } catch (error) {
     console.error('Error transcribing audio:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 
-// Translate text using Google Cloud Translation API
+// Translate text using self-hosted LibreTranslate
 const translateText = asyncHandler(async (req, res) => {
   try {
-    console.log('translateText controller called');
-    
-    const { text, targetLanguage, sourceLanguage } = req.body;
-    
-    if (!text) {
-      return res.status(400).json({ message: 'No text provided for translation' });
+    const { text, targetLanguage } = req.body;
+
+    if (!text || !targetLanguage) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
+
+    // Language code mapping
+    const languageMap = {
+      'English': 'en',
+      'Hindi': 'hi',
+      'French': 'fr',
+      'German': 'de',
+      'Spanish': 'es',
+      // Add more languages as needed
+    };
+
+    const targetLang = languageMap[targetLanguage] || 'en';
     
-    if (!targetLanguage) {
-      return res.status(400).json({ message: 'Target language is required' });
-    }
+    // Optional API key for self-hosted LibreTranslate
+    const apiKey = process.env.LIBRE_TRANSLATE_API_KEY || '';
     
-    // Set up the request
-    const request = {
-      parent: `projects/${projectId}/locations/${location}`,
-      contents: [text],
-      mimeType: 'text/plain',
-      sourceLanguageCode: sourceLanguage || 'en',
-      targetLanguageCode: targetLanguage,
+    // Prepare the request payload
+    const payload = {
+      q: text,
+      source: 'auto',
+      target: targetLang,
+      format: 'text'
     };
     
-    // Call the Translation API
-    const [response] = await translationClient.translateText(request);
+    // Add API key if available
+    if (apiKey) {
+      payload.api_key = apiKey;
+    }
     
-    // Extract the translation
-    const translation = response.translations[0].translatedText;
-    
+    const response = await axios.post(
+      `${libreTranslateEndpoint}/translate`,
+      payload,
+      {
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    console.log('LibreTranslate response:', response.data);
+
+    const translation = response.data?.translatedText || 'Translation unavailable';
+
     res.json({
       success: true,
       originalText: text,
       translatedText: translation,
-      sourceLanguage: sourceLanguage || 'en',
       targetLanguage,
+      detectedLanguage: response.data?.detectedLanguage?.language || 'unknown'
     });
   } catch (error) {
-    console.error('Error translating text:', error);
-    res.status(500).json({ message: error.message });
+    console.error('LibreTranslate error:', error.message);
+    res.status(500).json({
+      message: 'Translation failed using LibreTranslate',
+      details: error.message,
+    });
   }
 });
 
