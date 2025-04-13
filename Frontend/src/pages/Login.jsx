@@ -30,7 +30,7 @@ const Login = () => {
 
             // Store the token in localStorage
             if (response.data.token) {
-                localStorage.setItem('userToken', response.data.token);
+                localStorage.setItem('token', response.data.token);
                 localStorage.setItem('userData', JSON.stringify(response.data));
                 
                 // If remember me is toggled, set a longer expiration
@@ -51,7 +51,7 @@ const Login = () => {
     return (
         <div className='relative bg-no-repeat bg-cover' style={{ backgroundImage: `url(${BackgroundImage})`, height: "100vh", width: "100vw" }}>
             <div className='absolute inset-0 flex justify-center items-center h-screen'>
-                <div className='flex w-170 h-100 bg-white z-10 rounded-xl shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),_6px_0_6px_-3px_rgba(0,0,0,0.1),_-6px_0_6px_-3px_rgba(0,0,0,0.1)]'>
+                <div className='flex w-200 h-120 bg-white z-10 rounded-xl shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),_6px_0_6px_-3px_rgba(0,0,0,0.1),_-6px_0_6px_-3px_rgba(0,0,0,0.1)]'>
                     {/* Left side with illustration */}
                     <div className='w-1/2 p-2'>
                         <img src={communication} alt="Communication" className='w-full h-full object-contain' />

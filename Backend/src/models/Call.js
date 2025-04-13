@@ -1,4 +1,3 @@
-// src/models/Call.js
 const mongoose = require('mongoose');
 
 const callSchema = mongoose.Schema(
@@ -12,6 +11,10 @@ const callSchema = mongoose.Schema(
       type: Number, // duration in seconds
       required: true,
     },
+    holdDuration: {
+      type: Number, // hold duration in seconds
+      default: 0,
+    },
     audioUrl: {
       type: String, // URL or path to stored audio file
       required: true,
@@ -20,9 +23,19 @@ const callSchema = mongoose.Schema(
       type: String, // Text transcription of the call
       required: false,
     },
-    timestamp: {
-      type: Date,
-      default: Date.now,
+    sentiment: {
+      positive: {
+        type: Number,
+        default: 0
+      },
+      neutral: {
+        type: Number,
+        default: 0 
+      },
+      negative: {
+        type: Number,
+        default: 0
+      }
     }
   },
   {
