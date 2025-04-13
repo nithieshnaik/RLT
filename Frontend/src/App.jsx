@@ -9,6 +9,7 @@ import Report from './pages/Report'
 import AgentDetails from './pages/CallDetails.jsx'
 import CallTranslate from './pages/CallTranslate'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import Profile from './pages/Profile'
 
 
 const App = () => {
@@ -28,6 +29,7 @@ const App = () => {
             <Route path="/report" element={<Report />} /> 
             <Route path="/agentdetails" element={<AgentDetails />} />
             <Route path="/calltranslate" element={<CallTranslate />} />
+            <Route path="/profile" element={<Profile />} />
           {/* </Route> */}
         </Routes>
       </BrowserRouter>

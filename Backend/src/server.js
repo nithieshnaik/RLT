@@ -1,42 +1,38 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./config/db');
-const userRoutes = require('./routes/userRoutes');
-const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+// src/server.js
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const app = require('./app');
 
-// Initialize Express app
-const app = express();
+// Load environment variables
+dotenv.config();
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error connecting to MongoDB: ${error.message}`);
+    process.exit(1);
+  }
+};
 
-// Enable CORS
-app.use(cors({
-  origin: 'http://localhost:3000', // Your frontend URL
-  credentials: true
-}));
-
-// Routes
-app.use('/api/users', userRoutes);
-
-// API test route
-app.get('/api', (req, res) => {
-  res.json({ message: 'API is running' });
-});
-
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
-
-// Connect to database
 connectDB();
 
+// Set up port
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
-module.exports = app; // For testing purposes
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error(`Unhandled Rejection: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
