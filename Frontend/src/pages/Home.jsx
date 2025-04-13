@@ -5,33 +5,35 @@ import { Doughnut } from 'react-chartjs-2';
 import BarChart from '../components/BarChart';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import UploadIcon from '../assets/image-10.png';
-import axios from 'axios'; // Make sure axios is installed
+import axios from 'axios';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const Home = () => {
     // State for all call metrics
     const [callMetrics, setCallMetrics] = useState({
-        totalCalls: 15, // Default values shown initially
-        totalCallDuration: 162,
-        avgCallDuration: 45,
-        lastCallDuration: 36,
-        holdDuration: 45,
+        totalCalls: 0,
+        totalCallDuration: 0,
+        avgCallDuration: 0,
+        lastCallDuration: 0,
+        holdDuration: 0,
         sentimentData: {
-            positive: 60,
-            neutral: 25,
-            negative: 15
-        }, // Default sentiment data
-        npsScore: 45, // Default NPS score
+            positive: 0,
+            neutral: 0,
+            negative: 0
+        },
+        npsScore: 45,
         changePercentage: 15,
-        callHistory: null, // For the bar chart
-        sentimentTrends: [] // For sentiment trends
+        callHistory: null,
+        sentimentTrends: []
     });
 
     // State for loading and errors
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [uploadSuccess, setUploadSuccess] = useState(false);
+    const [uploadedDuration, setUploadedDuration] = useState(0);
+    const [uploadedHoldDuration, setUploadedHoldDuration] = useState(0);
 
     // Fetch initial call data when component mounts
     useEffect(() => {
@@ -44,7 +46,7 @@ const Home = () => {
         setError(null);
         
         try {
-            // Get token from localStorage - using 'token' consistently
+            // Get token from localStorage
             const token = localStorage.getItem('token');
             
             if (!token) {
@@ -64,12 +66,17 @@ const Home = () => {
             // Update state with fetched data
             setCallMetrics({
                 totalCalls: response.data.totalCalls || 0,
-                totalCallDuration: Math.round(response.data.totalDuration / 60) || 0, // Convert seconds to minutes
-                avgCallDuration: response.data.averageCallDuration || 0, // Already in minutes from backend
-                lastCallDuration: response.data.calls && response.data.calls.length > 0 ? 
-                    Math.round(response.data.calls[0].duration / 60) : 0, // Most recent call duration
-                holdDuration: response.data.calls && response.data.calls.length > 0 ? 
-                    Math.round(response.data.calls[0].holdDuration / 60) : 0, // Most recent hold duration
+                // Convert seconds to minutes and ensure proper rounding
+                totalCallDuration: Math.round(response.data.totalDuration / 60) || 0,
+                avgCallDuration: response.data.totalCalls > 0 
+                    ? Math.round(response.data.totalDuration / response.data.totalCalls / 60) 
+                    : 0,
+                lastCallDuration: response.data.calls && response.data.calls.length > 0 
+                    ? Math.round(response.data.calls[0].duration / 60) 
+                    : 0,
+                holdDuration: response.data.calls && response.data.calls.length > 0 
+                    ? Math.round(response.data.calls[0].holdDuration / 60) 
+                    : 0,
                 sentimentData: response.data.sentimentData || {
                     positive: 60,
                     neutral: 25,
@@ -80,6 +87,19 @@ const Home = () => {
                 callHistory: processCallTrendsForChart(response.data.callTrends || []),
                 sentimentTrends: response.data.sentimentTrends || []
             });
+            
+            // If we have new uploaded durations, set them as the last call/hold duration
+            if (uploadedDuration > 0) {
+                setCallMetrics(prev => ({
+                    ...prev,
+                    lastCallDuration: Math.round(uploadedDuration / 60),
+                    holdDuration: Math.round(uploadedHoldDuration / 60)
+                }));
+                
+                // Reset uploaded values
+                setUploadedDuration(0);
+                setUploadedHoldDuration(0);
+            }
         } catch (err) {
             console.error('Error fetching call data:', err);
             setError('Failed to load call analytics data. Please try again later.');
@@ -116,12 +136,20 @@ const Home = () => {
         const formData = new FormData();
         formData.append('audioFile', file);
         
-        // Add duration and hold duration (for demo purposes - in a real app you'd calculate these)
-        formData.append('duration', '180'); // 3 minutes in seconds
-        formData.append('holdDuration', '60'); // 1 minute in seconds
+        // Use random values for demonstration purposes
+        // In a real app, you'd calculate these from the audio file
+        const callDuration = Math.floor(Math.random() * 300) + 60; // Between 1-6 minutes in seconds
+        const holdDuration = Math.floor(Math.random() * callDuration / 2); // Up to half the call duration
+        
+        // Store these for immediate UI update
+        setUploadedDuration(callDuration);
+        setUploadedHoldDuration(holdDuration);
+        
+        formData.append('duration', callDuration.toString());
+        formData.append('holdDuration', holdDuration.toString());
+        formData.append('transcription', 'This is a transcription of the call. The customer was satisfied with the service.');
 
         try {
-            // Use the same token key as in fetchCallData for consistency
             const token = localStorage.getItem('token');
             
             if (!token) {
@@ -131,6 +159,7 @@ const Home = () => {
             }
             
             console.log('Uploading audio file...');
+            console.log('Call duration:', callDuration, 'Hold duration:', holdDuration);
             
             // Upload the audio file
             const response = await axios.post('/api/calls/record', formData, {
@@ -143,8 +172,23 @@ const Home = () => {
             console.log('Upload response:', response.data);
             setUploadSuccess(true);
             
+            // Update call metrics immediately before refreshing data
+            setCallMetrics(prev => {
+                const newTotalCalls = prev.totalCalls + 1;
+                const newTotalDuration = prev.totalCallDuration * 60 + callDuration; // Convert mins back to seconds, add new duration
+                
+                return {
+                    ...prev,
+                    totalCalls: newTotalCalls,
+                    totalCallDuration: Math.round(newTotalDuration / 60), // Convert back to minutes
+                    avgCallDuration: Math.round(newTotalDuration / newTotalCalls / 60), // Calculate new average in minutes
+                    lastCallDuration: Math.round(callDuration / 60), // Last call duration in minutes
+                    holdDuration: Math.round(holdDuration / 60) // Hold duration in minutes
+                };
+            });
+            
             // Refresh call data after successful upload
-            fetchCallData();
+            setTimeout(fetchCallData, 1000); // Small delay to ensure server processes the upload
         } catch (err) {
             console.error('Error uploading audio file:', err);
             setError('Failed to upload audio file. Please try again.');

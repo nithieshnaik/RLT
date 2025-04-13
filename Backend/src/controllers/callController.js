@@ -1,5 +1,39 @@
 const fs = require('fs');
 const Call = require('../models/Call');
+const Sentiment = require('sentiment');
+const sentiment = new Sentiment();
+
+// Function to analyze sentiment and return structured data
+const analyzeSentiment = (text) => {
+  const result = sentiment.analyze(text);
+  
+  // Convert to percentage format
+  let positive = 0;
+  let negative = 0;
+  let neutral = 100;
+  
+  // Normalize the score to percentages
+  if (result.score > 0) {
+    positive = Math.min(100, Math.round((result.score / 5) * 100));
+    neutral = 100 - positive;
+    negative = 0;
+  } else if (result.score < 0) {
+    negative = Math.min(100, Math.round((Math.abs(result.score) / 5) * 100));
+    neutral = 100 - negative;
+    positive = 0;
+  }
+  
+  // Ensure values are reasonable
+  if (positive + neutral + negative !== 100) {
+    neutral = 100 - positive - negative;
+  }
+  
+  return {
+    positive,
+    neutral,
+    negative
+  };
+};
 
 const saveCall = async (req, res) => {
   try {
@@ -46,19 +80,8 @@ const saveCall = async (req, res) => {
       return res.status(400).json({ message: 'No audio data provided' });
     }
     
-    // Create sentiment data (you may want to analyze the audio/transcription to get real sentiment)
-    const sentimentData = {
-      positive: Math.floor(Math.random() * 60) + 20, // Random value between 20-80
-      neutral: Math.floor(Math.random() * 50), // Random value between 0-50
-      negative: Math.floor(Math.random() * 30) // Random value between 0-30
-    };
-    
-    // Ensure total is 100%
-    const totalSentiment = sentimentData.positive + sentimentData.neutral + sentimentData.negative;
-    if (totalSentiment !== 100) {
-      const diff = 100 - totalSentiment;
-      sentimentData.neutral += diff;
-    }
+    // Use real sentiment analysis instead of random values
+    const sentimentData = analyzeSentiment(transcription);
     
     // Create a new call record in the database
     const newCall = new Call({

@@ -6,9 +6,6 @@ const { SpeechClient } = require('@google-cloud/speech');
 // Set up Google Cloud clients
 const speechClient = new SpeechClient();
 
-// LibreTranslate configuration
-const libreTranslateEndpoint = process.env.LIBRE_TRANSLATE_ENDPOINT || 'http://localhost:5000';
-
 // Transcribe audio using Google Cloud Speech-to-Text
 const transcribeAudio = asyncHandler(async (req, res) => {
   try {
@@ -77,10 +74,10 @@ const transcribeAudio = asyncHandler(async (req, res) => {
   }
 });
 
-// Translate text using self-hosted LibreTranslate
+// Translate text using MyMemory API (free, no API key required)
 const translateText = asyncHandler(async (req, res) => {
   try {
-    const { text, targetLanguage } = req.body;
+    const { text, targetLanguage, sourceLanguage = 'English' } = req.body;
 
     if (!text || !targetLanguage) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -90,53 +87,97 @@ const translateText = asyncHandler(async (req, res) => {
     const languageMap = {
       'English': 'en',
       'Hindi': 'hi',
-      'French': 'fr',
-      'German': 'de',
-      'Spanish': 'es',
+      'Punjabi': 'pa',
+      'Haryanvi': 'hi', // No specific code, closest is Hindi
+      'Bhojpuri': 'bho',
+      'Maithli': 'mai',
+      'Odia': 'or',
+      'Bengali': 'bn',
+      'Gujarati': 'gu', 
+      'Tamil': 'ta',
+      'Telugu': 'te',
+      'Kannada': 'kn', 
+      'Malayalam': 'ml',
+      'Marathi': 'mr',
+      'Urdu': 'ur',
+      
       // Add more languages as needed
     };
 
-    const targetLang = languageMap[targetLanguage] || 'en';
+    const sourceLang = languageMap[sourceLanguage] || 'en';
+    const targetLang = languageMap[targetLanguage] || 'hi';
     
-    // Optional API key for self-hosted LibreTranslate
-    const apiKey = process.env.LIBRE_TRANSLATE_API_KEY || '';
+    console.log(`Translating from ${sourceLang} to ${targetLang}`);
     
-    // Prepare the request payload
-    const payload = {
-      q: text,
-      source: 'auto',
-      target: targetLang,
-      format: 'text'
-    };
-    
-    // Add API key if available
-    if (apiKey) {
-      payload.api_key = apiKey;
-    }
-    
-    const response = await axios.post(
-      `${libreTranslateEndpoint}/translate`,
-      payload,
+    // Call MyMemory API - completely free for limited usage
+    const response = await axios.get(
+      `https://api.mymemory.translated.net/get`,
       {
-        headers: { 'Content-Type': 'application/json' }
+        params: {
+          q: text,
+          langpair: `${sourceLang}|${targetLang}`,
+          de: 'your@email.com', // Add your email for slightly higher usage limits
+        }
       }
     );
 
-    console.log('LibreTranslate response:', response.data);
+    console.log('MyMemory API response:', response.data);
 
-    const translation = response.data?.translatedText || 'Translation unavailable';
+    const translatedText = response.data?.responseData?.translatedText || 'Translation unavailable';
+
+    // For languages with limited support, we might need a fallback
+    if (translatedText === text && sourceLang !== targetLang) {
+      console.log(`Direct translation failed, attempting two-step translation via English`);
+      
+      // If direct translation fails, try translating via English
+      if (sourceLang !== 'en') {
+        const toEnglishResponse = await axios.get(
+          `https://api.mymemory.translated.net/get`,
+          {
+            params: {
+              q: text,
+              langpair: `${sourceLang}|en`,
+              de: 'your@email.com',
+            }
+          }
+        );
+        
+        const englishText = toEnglishResponse.data?.responseData?.translatedText || text;
+        
+        const fromEnglishResponse = await axios.get(
+          `https://api.mymemory.translated.net/get`,
+          {
+            params: {
+              q: englishText,
+              langpair: `en|${targetLang}`,
+              de: 'your@email.com',
+            }
+          }
+        );
+        
+        const finalTranslation = fromEnglishResponse.data?.responseData?.translatedText || 'Translation unavailable';
+        
+        res.json({
+          success: true,
+          originalText: text,
+          translatedText: finalTranslation,
+          targetLanguage,
+          note: 'Used two-step translation via English'
+        });
+        return;
+      }
+    }
 
     res.json({
       success: true,
       originalText: text,
-      translatedText: translation,
+      translatedText: translatedText,
       targetLanguage,
-      detectedLanguage: response.data?.detectedLanguage?.language || 'unknown'
     });
   } catch (error) {
-    console.error('LibreTranslate error:', error.message);
+    console.error('Translation error:', error.message);
     res.status(500).json({
-      message: 'Translation failed using LibreTranslate',
+      message: 'Translation failed',
       details: error.message,
     });
   }

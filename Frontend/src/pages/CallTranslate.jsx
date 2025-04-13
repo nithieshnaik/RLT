@@ -8,14 +8,17 @@ const CallTranslate = () => {
     const [targetLanguage, setTargetLanguage] = useState('Hindi')
     const [isProcessing, setIsProcessing] = useState(false)
     const [conversation, setConversation] = useState([])
-    const [error, setError] = useState(null) // Add error state for debugging
+    const [error, setError] = useState(null)
+    const [translationStatus, setTranslationStatus] = useState('') // Added to show translation progress
 
-    const languages = ['English', 'Hindi', 'Punjabi', 'Haryanvi', 'Bhojpuri', 'Maithli', 'Odia']
+    // Expanded language list
+    const languages = ['English', 'Hindi', 'Punjabi', 'Haryanvi', 'Bhojpuri', 'Maithli', 'Odia', 'Telugu' , 'Tamil', 'Gujarati', 'Marathi', 'Malayalam', 'Bengali', 'Urdu', 'Kannada']
 
     // API call to transcribe audio
     const transcribeAudio = async (audioBlob) => {
         try {
-            setError(null) // Clear any previous errors
+            setError(null)
+            setTranslationStatus('Transcribing audio...')
             
             // Create formData
             const formData = new FormData()
@@ -40,7 +43,7 @@ const CallTranslate = () => {
             return response.data.text
         } catch (error) {
             console.error('Transcription error:', error)
-            setError('Failed to transcribe audio: ' + error.message)
+            setError('Failed to transcribe audio: ' + (error.response?.data?.message || error.message))
             throw new Error('Failed to transcribe audio')
         }
     }
@@ -48,6 +51,7 @@ const CallTranslate = () => {
     // API call to translate text
     const translateText = async (text, targetLang) => {
         try {
+            setTranslationStatus(`Translating to ${targetLang}...`)
             console.log(`Attempting to translate text to ${targetLang}`)
             
             const response = await axios.post('/api/transcription/translate', {
@@ -66,8 +70,10 @@ const CallTranslate = () => {
             return response.data.translatedText
         } catch (error) {
             console.error('Translation error:', error)
-            setError('Failed to translate text: ' + error.message)
+            setError('Failed to translate text: ' + (error.response?.data?.message || error.message))
             throw new Error('Failed to translate text')
+        } finally {
+            setTranslationStatus('')
         }
     }
 
@@ -121,9 +127,9 @@ const CallTranslate = () => {
         } catch (error) {
             console.error("Error processing audio:", error)
             setError("Failed to process audio: " + error.message)
-            alert("Failed to process audio. Please try again.")
         } finally {
             setIsProcessing(false)
+            setTranslationStatus('')
         }
     }
 
@@ -162,6 +168,12 @@ const CallTranslate = () => {
                 console.log("Recording stopped, processing audio chunks...")
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
                 console.log("Created audio blob of size:", audioBlob.size)
+                
+                if (audioBlob.size < 100) {
+                    setError("Recording is too short or empty. Please try again.")
+                    return
+                }
+                
                 handleAudioUpload(audioBlob)
             })
 
@@ -180,7 +192,6 @@ const CallTranslate = () => {
         } catch (error) {
             console.error("Error starting recording:", error)
             setError("Could not access microphone: " + error.message)
-            alert("Could not access microphone. Please check permissions.")
         }
     }
 
@@ -207,6 +218,44 @@ const CallTranslate = () => {
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
     }
 
+    // Re-translate existing conversation when target language changes
+    useEffect(() => {
+        const updateTranslations = async () => {
+            if (conversation.length === 0) return;
+            
+            // Only update if we have conversations and the language has actually changed
+            const updatedConversation = [...conversation];
+            let needsUpdate = false;
+            
+            for (let i = 0; i < updatedConversation.length; i++) {
+                const item = updatedConversation[i];
+                // Skip if this item doesn't need translation (already updated)
+                if (item._targetLanguage === targetLanguage) continue;
+                
+                needsUpdate = true;
+                try {
+                    setTranslationStatus(`Updating translations to ${targetLanguage}...`);
+                    const newTranslation = await translateText(item.english, targetLanguage);
+                    updatedConversation[i] = {
+                        ...item,
+                        hindi: newTranslation,
+                        _targetLanguage: targetLanguage // Mark this with the language it was translated to
+                    };
+                } catch (error) {
+                    console.error("Failed to update translation:", error);
+                    // Keep the original translation but don't block the other updates
+                }
+            }
+            
+            if (needsUpdate) {
+                setConversation(updatedConversation);
+            }
+            setTranslationStatus('');
+        };
+        
+        updateTranslations();
+    }, [targetLanguage]);
+
     // Clean up on component unmount
     useEffect(() => {
         return () => {
@@ -228,7 +277,7 @@ const CallTranslate = () => {
             <div className="flex-1 p-5 flex flex-col mb-10" >
                 {/* Header */}
                 <div className="flex items-center mt-15">
-                    <h1 className="text-4xl font-bold text-navy-900 mr-4">Call Translator</h1>
+                    <h1 className="text-4xl font-bold text-Blue-900 mr-4">Call Translator</h1>
 
                     {/* Audio Controls */}
                     <div className="flex items-center space-x-2">
@@ -286,6 +335,13 @@ const CallTranslate = () => {
                         <strong>Error: </strong> {error}
                     </div>
                 )}
+                
+                {/* Translation Status */}
+                {translationStatus && (
+                    <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-2 rounded mt-2 mb-4" role="alert">
+                        <strong>Status: </strong> {translationStatus}
+                    </div>
+                )}
 
                 {/* Translator Box */}
                 <div className="bg-white rounded-lg shadow-lg pb-5 pt-2 pl-6 pr-6 flex-1 flex flex-col overflow-hidden mt-4">
@@ -315,7 +371,7 @@ const CallTranslate = () => {
                                 {/* Conversation */}
                                 {conversation.length > 0 ? (
                                     conversation.map((item, index) => (
-                                        <div key={`source-${index}`} className={`mb-4 flex ${index === conversation.length - 1 ? 'animate-pulse-once' : ''}`}>
+                                        <div key={`source-${index}`} className={`mb-4 flex ${index === conversation.length - 1 && !isProcessing ? 'animate-pulse-once' : ''}`}>
                                             <div className={`${item.speaker === 'P' ? 'bg-blue-900' : 'bg-red-500'} text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0`}>
                                                 {item.speaker}
                                             </div>
@@ -342,6 +398,7 @@ const CallTranslate = () => {
                                             value={targetLanguage}
                                             onChange={(e) => setTargetLanguage(e.target.value)}
                                             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            disabled={isProcessing}
                                         >
                                             {languages.map(lang => (
                                                 <option key={`target-${lang}`} value={lang}>{lang}</option>
@@ -355,7 +412,7 @@ const CallTranslate = () => {
                                 {/* Conversation in Target Language */}
                                 {conversation.length > 0 ? (
                                     conversation.map((item, index) => (
-                                        <div key={`target-${index}`} className={`mb-4 flex ${index === conversation.length - 1 ? 'animate-pulse-once' : ''}`}>
+                                        <div key={`target-${index}`} className={`mb-4 flex ${index === conversation.length - 1 && !isProcessing ? 'animate-pulse-once' : ''}`}>
                                             <div className={`${item.speaker === 'P' ? 'bg-blue-900' : 'bg-red-500'} text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0`}>
                                                 {item.speaker}
                                             </div>

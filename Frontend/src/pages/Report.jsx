@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import BackgroundImage from '../assets/backgroundImage.png';
 import LeftSidePane from '../components/LeftSidePane';
-import { Doughnut, Line } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
+import { Doughnut, Line, Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, BarElement } from 'chart.js';
 
 // Register ChartJS components
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, BarElement);
 
 const Report = () => {
     const [reportData, setReportData] = useState({
@@ -15,13 +15,15 @@ const Report = () => {
         agentPerformance: 0,
         customerSentiment: 0,
         npsScore: 0,
+        totalCalls: 0,
         sentiment: {
             positive: 0,
             neutral: 0,
             negative: 0
         },
         callTrends: [],
-        sentimentTrends: []
+        sentimentTrends: [],
+        recentCalls: []
     });
     const [loading, setLoading] = useState(true);
     
@@ -30,6 +32,21 @@ const Report = () => {
     const [startDate, setStartDate] = useState(getDefaultStartDate('week'));
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [customRange, setCustomRange] = useState(false);
+    
+    // Helper function to calculate NPS from sentiment - MOVED UP HERE
+    const calculateNpsFromSentiment = (sentiment) => {
+        if (!sentiment) return 0;
+        return Math.min(100, Math.max(0, Math.round(
+            ((sentiment.positive - sentiment.negative) / 100) * 100
+        )));
+    };
+    
+    // Helper function to calculate average metric from calls
+    const calculateAvgMetric = (calls, metricName) => {
+        if (!calls || calls.length === 0) return 0;
+        const sum = calls.reduce((total, call) => total + (call[metricName] || 0), 0);
+        return Math.round(sum / calls.length);
+    };
     
     // Get default start date based on range
     function getDefaultStartDate(range) {
@@ -73,17 +90,19 @@ const Report = () => {
                 // Process the response data
                 setReportData({
                     callDuration: response.data.averageCallDuration || 0,
-                    timeStamps: response.data.calls[0]?.duration || 0,
-                    agentPerformance: response.data.calls[0]?.agentPerformanceScore || 42,
-                    customerSentiment: response.data.calls[0]?.customerSentimentScore || 32,
+                    timeStamps: response.data.totalDuration ? Math.round(response.data.totalDuration / 60) : 0, // Convert to minutes
+                    agentPerformance: response.data.agentPerformance || calculateAvgMetric(response.data.calls, 'agentPerformanceScore'),
+                    customerSentiment: response.data.customerSentiment || calculateAvgMetric(response.data.calls, 'customerSentimentScore'),
                     npsScore: response.data.npsScore || 42,
+                    totalCalls: response.data.totalCalls || 0,
                     sentiment: {
                         positive: response.data.sentimentData?.positive || 60,
                         neutral: response.data.sentimentData?.neutral || 25,
                         negative: response.data.sentimentData?.negative || 15
                     },
                     callTrends: response.data.callTrends || [],
-                    sentimentTrends: response.data.sentimentTrends || generateSampleSentimentTrends(startDate, endDate)
+                    sentimentTrends: response.data.sentimentTrends || generateSampleSentimentTrends(startDate, endDate),
+                    recentCalls: response.data.calls || []
                 });
                 setLoading(false);
             } catch (error) {
@@ -144,6 +163,18 @@ const Report = () => {
         ],
     };
     
+    // Call metrics data for supplementary chart
+    const callMetricsData = {
+        labels: ['Agent Performance', 'Customer Sentiment'],
+        datasets: [
+            {
+                data: [reportData.agentPerformance, reportData.customerSentiment],
+                backgroundColor: ['#00AAFF', '#41B8D5'],
+                borderWidth: 0,
+            },
+        ],
+    };
+    
     // Trend chart data
     const sentimentTrendData = {
         labels: reportData.sentimentTrends.map(trend => trend.date),
@@ -171,6 +202,18 @@ const Report = () => {
                 backgroundColor: '#2D8BBA',
                 borderColor: '#2D8BBA',
                 tension: 0.1
+            }
+        ]
+    };
+    
+    // Recent calls NPS data
+    const recentCallsNpsData = {
+        labels: reportData.recentCalls.slice(0, 5).map((_, index) => `Call ${index + 1}`),
+        datasets: [
+            {
+                label: 'NPS Score',
+                data: reportData.recentCalls.slice(0, 5).map(call => calculateNpsFromSentiment(call.sentiment)),
+                backgroundColor: '#00AAFF',
             }
         ]
     };
@@ -221,6 +264,32 @@ const Report = () => {
         }
     };
     
+    const barChartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: 'NPS Scores of Recent Calls',
+                font: {
+                    size: 16
+                }
+            },
+        },
+        scales: {
+            y: {
+                min: 0,
+                max: 100,
+                title: {
+                    display: true,
+                    text: 'NPS Score'
+                }
+            }
+        }
+    };
+    
     // Handle date range changes
     const handleDateRangeChange = (e) => {
         const range = e.target.value;
@@ -248,12 +317,15 @@ const Report = () => {
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-no-repeat bg-cover" style={{ backgroundImage: `url(${BackgroundImage})` }}>
             <LeftSidePane />
-            <div className="flex flex-1 px-10 py-6 overflow-y-auto mt-15 ">
+            <div className="flex flex-1 px-10 py-6 overflow-y-auto mt-15">
                 <div className="w-full flex flex-col">
                     {/* Header with Date Filters */}
                     <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-5xl font-bold text-blue-900">Report</h1>
+                        <h1 className="text-5xl font-bold text-blue-900">Call Analytics Report</h1>
                         <div className="flex items-center gap-4">
+                            <div className="text-blue-900 text-lg font-bold">
+                                Total Calls: {reportData.totalCalls}
+                            </div>
                             <div>
                                 <label htmlFor="dateRange" className="mr-2 text-gray-700">Date Range:</label>
                                 <select 
@@ -293,46 +365,81 @@ const Report = () => {
                     {/* First row - Call Info and NPS */}
                     <div className="flex gap-3 mb-4">
                         {/* Left Card - Info + Chart */}
-                        <div className="bg-white shadow-lg p-6 rounded-2xl w-[45%] flex flex-col justify-center items-start">
-                            <p className="text-md mb-3 text-gray-800">Call Duration : <b>{Math.round(reportData.callDuration)} Min</b></p>
-                            <p className="text-md mb-3 text-gray-800">Time Stamps : <b>{Math.round(reportData.timeStamps)} Min</b></p>
-                            <p className="text-md mb-3 text-gray-800">Agent Performance Metrics : <b>{reportData.agentPerformance}</b></p>
-                            <p className="text-md mb-6 text-gray-800">Customer Sentiment Analysis : <b>{reportData.customerSentiment}</b></p>
+                        <div className="bg-white shadow-lg p-6 rounded-2xl w-1/3 flex flex-col justify-center items-start">
+                            <h2 className="text-2xl font-bold text-blue-900 mb-4">CALL METRICS</h2>
+                            <p className="text-md mb-3 text-gray-800">Total Call Duration: <b>{reportData.timeStamps} Min</b></p>
+                            <p className="text-md mb-3 text-gray-800">Average Call Duration: <b>{reportData.callDuration} Min</b></p>
+                            <p className="text-md mb-3 text-gray-800">Agent Performance Score: <b>{reportData.agentPerformance}</b></p>
+                            <p className="text-md mb-6 text-gray-800">Customer Sentiment Score: <b>{reportData.customerSentiment}</b></p>
                             <div className="w-full flex justify-center">
-                                <div className="w-63 h-75 mt-10">
-                                    <Doughnut data={sentimentData} options={options} />
+                                <div className="w-56 h-56 mt-4">
+                                    <Doughnut 
+                                        data={callMetricsData} 
+                                        options={{
+                                            ...options,
+                                            plugins: {
+                                                ...options.plugins,
+                                                title: {
+                                                    display: true,
+                                                    text: 'Performance vs Sentiment',
+                                                    font: { size: 16 }
+                                                }
+                                            }
+                                        }} 
+                                    />
                                 </div>
                             </div>
                         </div>
                         
-                        {/* Right Cards */}
-                        <div className="flex flex-col gap-6 w-[55%] h-full">
-                            {/* NPS */}
-                            <div className="bg-white shadow-lg p-6 rounded-2xl flex flex-col justify-between items-center">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-blue-900">NPS (NET PROMOTER SCORE)</h2>
-                                </div>
-                                <div className='flex flex-row justify-between items-center'>
-                                    <div className="w-80 h-40 flex justify-center items-center">
-                                        <Doughnut data={semiCircleData} options={semiCircleOptions} />
-                                    </div>
-                                    <div className="text-6xl font-bold text-blue-900">{reportData.npsScore}</div>
-                                </div>
+                        {/* Center Card - NPS */}
+                        <div className="bg-white shadow-lg p-6 rounded-2xl w-1/3 flex flex-col justify-between items-center">
+                            <div>
+                                <h2 className="text-2xl font-bold text-blue-900">NPS (NET PROMOTER SCORE)</h2>
                             </div>
-                            
-                            {/* Sentiment */}
-                            <div className="bg-white shadow-lg p-6 rounded-2xl flex justify-center items-center">
-                                <div className="flex flex-col w-full">
-                                    <h2 className="text-2xl font-bold text-blue-900 mb-4">SENTIMENT ANALYSIS</h2>
-                                    <div className="flex flex-row">
-                                        <div className="w-48 h-48">
-                                            <Doughnut data={sentimentData} options={options} />
-                                        </div>
-                                        <div className='text-xl text-blue-900 ml-6'>
-                                            <p>Positive: {reportData.sentiment.positive}</p>
-                                            <p>Negative: {reportData.sentiment.negative}</p>
-                                            <p>Neutral: {reportData.sentiment.neutral}</p>
-                                        </div>
+                            <div className="flex flex-col justify-center items-center h-full">
+                                <div className="w-64 h-40 flex justify-center items-center">
+                                    <Doughnut data={semiCircleData} options={semiCircleOptions} />
+                                </div>
+                                <div className="text-6xl font-bold text-blue-900 mt-4">{reportData.npsScore}</div>
+                                <p className="text-gray-600 mt-2">Overall NPS Score</p>
+                            </div>
+                            <div className="w-full mt-4">
+                                <Bar data={recentCallsNpsData} options={barChartOptions} height={120} />
+                            </div>
+                        </div>
+                        
+                        {/* Right Card - Sentiment */}
+                        <div className="bg-white shadow-lg p-6 rounded-2xl w-1/3 flex flex-col">
+                            <h2 className="text-2xl font-bold text-blue-900 mb-4">SENTIMENT ANALYSIS</h2>
+                            <div className="flex flex-col items-center">
+                                <div className="w-56 h-56">
+                                    <Doughnut 
+                                        data={sentimentData} 
+                                        options={{
+                                            ...options,
+                                            plugins: {
+                                                ...options.plugins,
+                                                title: {
+                                                    display: true,
+                                                    text: 'Average Sentiment Breakdown',
+                                                    font: { size: 16 }
+                                                }
+                                            }
+                                        }} 
+                                    />
+                                </div>
+                                <div className="text-xl text-blue-900 mt-6 w-full">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span>Positive:</span>
+                                        <span className="font-bold">{reportData.sentiment.positive}%</span>
+                                    </div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span>Neutral:</span>
+                                        <span className="font-bold">{reportData.sentiment.neutral}%</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span>Negative:</span>
+                                        <span className="font-bold">{reportData.sentiment.negative}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -340,9 +447,9 @@ const Report = () => {
                     </div>
                     
                     {/* Second row - Trend Charts */}
-                    <div className="bg-white shadow-lg p-6 rounded-2xl mt-6 w-[100%]">
+                    <div className="bg-white shadow-lg p-6 rounded-2xl mt-6 w-full">
                         <h2 className="text-2xl font-bold text-blue-900 mb-4">SENTIMENT TRENDS OVER TIME</h2>
-                        <div className="h-64 w-[100%] flex justify-center items-center">
+                        <div className="h-64 w-full flex justify-center items-center">
                             <Line data={sentimentTrendData} options={lineChartOptions} />
                         </div>
                     </div>
