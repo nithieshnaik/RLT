@@ -1,0 +1,20 @@
+{
+  "pipeline_status": "completed",
+  "steps_completed": [
+    "run_diarization",
+    "run_whisper",
+    "run_alignment",
+    "run_sentiment_analysis",
+    "run_summarization"
+  ],
+  "errors": [],
+  "output_files": {
+    "diarization": "/home/amit/april_cohort/testing/diarization_result.json",
+    "transcript": "/home/amit/april_cohort/testing/whisper_transcript.txt",
+    "aligned": "/home/amit/april_cohort/testing/aligned_transcript.json",
+    "formatted": "/home/amit/april_cohort/testing/formatted_transcript.txt",
+    "indicbert_input": "/home/amit/april_cohort/testing/indicbert_input.json",
+    "sentiment": "/home/amit/april_cohort/testing/sentiment_results.json",
+    "summary": "/home/amit/april_cohort/testing/summary_output.txt"
+  }
+}
