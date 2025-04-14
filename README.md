@@ -3,6 +3,7 @@
 ## 📋 Overview
 
 Reverie is a comprehensive call center analytics platform that provides real-time transcription, translation, sentiment analysis, and performance metrics for call center operations. The platform supports multiple languages with a primary focus on English and Hindi, while being designed to extend to other Indian languages.
+![Reverie Technology Login page](https://github.com/nithieshnaik/RLT/blob/main/ReverieTechnologyLoginPage.jpg?raw=true)
 
 ## 🌟 Key Features
 
