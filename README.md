@@ -29,10 +29,13 @@ Reverie is a comprehensive call center analytics platform that provides real-tim
 ### Call Analytics
 
 - Hold time tracking
-- Dead air detection
 - Agent overtalk identification
 - Call duration metrics
 - Net Promoter Score (NPS) tracking
+
+### Running the Application
+
+-  To run the application locally, start the server and navigate to http://localhost:3000 in your web browser.
 
 ### Reporting & Dashboards
 
@@ -46,7 +49,6 @@ Reverie is a comprehensive call center analytics platform that provides real-tim
 
 - Agent profiles and performance history
 - Role-based access control
-- Multi-factor authentication (Email and Phone OTP)
 - Profile management
 
 ## 💻 Technology Stack
@@ -56,7 +58,6 @@ Reverie is a comprehensive call center analytics platform that provides real-tim
 - React.js
 - TailwindCSS
 - Chart.js for data visualization
-- WebSockets for real-time updates
 
 ### Backend
 
@@ -211,4 +212,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 (1) Nithiesh Naik (https://github.com/nithieshnaik/)
 (2) Narendra Lal (https://github.com/Narendra9906/)
 (3) Muskan Agarwal (https://github.com/muskanagarwal3110/)
-(4) Amit Rajput (https://github.com/jsdfsfw3456/)
+(4) Amit Rajput (https://github.com/amitrajput786)
