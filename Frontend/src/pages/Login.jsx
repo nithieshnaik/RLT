@@ -16,7 +16,7 @@ const Login = () => {
     const navigate = useNavigate();
 
     // Google Client ID - replace with your actual Client ID from Google Cloud Console
-    const GOOGLE_CLIENT_ID = "521647966541-bpamcibjkjfdekv3f4pfjadn6a320r42.apps.googleusercontent.com";
+    const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
     // Check for remembered credentials on component mount
     useEffect(() => {

@@ -4,7 +4,7 @@ const generateToken = require('../utils/generateToken');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
-const CLIENT_ID = "521647966541-bpamcibjkjfdekv3f4pfjadn6a320r42.apps.googleusercontent.com"; // Use the same CLIENT_ID from your frontend
+const CLIENT_ID = ""; // Use the same CLIENT_ID from your frontend
 const client = new OAuth2Client(CLIENT_ID);
 
 // @desc    Auth user & get token
