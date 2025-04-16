@@ -1,21 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackgroundImage from '../assets/backgroundImage.png';
 import communication from '../assets/communication.png';
 import '../components/ToggleButton.css';
 import axios from 'axios';
+// Import the Google OAuth components
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
-    const [isToggled, setIsToggled] = useState(false); // Restored useState for toggle
+    const [isToggled, setIsToggled] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    // Restored handleToggle function
+    // Google Client ID - replace with your actual Client ID from Google Cloud Console
+    const GOOGLE_CLIENT_ID = "521647966541-bpamcibjkjfdekv3f4pfjadn6a320r42.apps.googleusercontent.com";
+
+    // Check for remembered credentials on component mount
+    useEffect(() => {
+        const rememberMe = localStorage.getItem('rememberMe') === 'true';
+        if (rememberMe) {
+            setIsToggled(true);
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            if (userData.email) {
+                setEmail(userData.email);
+            }
+            
+            // For security reasons, we don't store the actual password in localStorage
+            // Instead, we just pre-fill the email and set the toggle
+            
+            // Optionally, you could store an encrypted version of the password
+            // and decrypt it here, but that approach has security implications
+        }
+    }, []);
+
     const handleToggle = () => {
         setIsToggled(!isToggled);
+        
+        // If toggling off, clear the rememberMe flag
+        if (isToggled) {
+            localStorage.removeItem('rememberMe');
+        }
     };
 
     const handleLogin = async (e) => {
@@ -32,12 +59,16 @@ const Login = () => {
             // Store the token in localStorage
             if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
-                localStorage.setItem('userData', JSON.stringify(response.data));
+                
+                // Store user data including email for remember me feature
+                const userData = {...response.data, email};
+                localStorage.setItem('userData', JSON.stringify(userData));
 
-                // If remember me is toggled, set a longer expiration
+                // If remember me is toggled, set the flag
                 if (isToggled) {
-                    // The token itself has an expiration, this is just to track the user preference
                     localStorage.setItem('rememberMe', 'true');
+                } else {
+                    localStorage.removeItem('rememberMe');
                 }
 
                 navigate('/home');
@@ -47,6 +78,45 @@ const Login = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Handle Google login success
+    const handleGoogleLoginSuccess = async (credentialResponse) => {
+        try {
+            setIsLoading(true);
+            
+            // Get the credential token
+            const { credential } = credentialResponse;
+            
+            // Send to your backend
+            const response = await axios.post('http://localhost:5000/api/users/google-login', {
+                token: credential,
+            });
+            
+            // Store the token and user data
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('userData', JSON.stringify(response.data));
+                
+                if (isToggled) {
+                    localStorage.setItem('rememberMe', 'true');
+                } else {
+                    localStorage.removeItem('rememberMe');
+                }
+                
+                navigate('/home');
+            }
+        } catch (err) {
+            console.error('Google login error:', err);
+            setError(err.response?.data?.message || 'Failed to login with Google.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Handle Google login error
+    const handleGoogleLoginError = () => {
+        setError('Google sign-in was unsuccessful. Please try again.');
     };
 
     return (
@@ -146,7 +216,7 @@ const Login = () => {
                                                 type="checkbox"
                                                 className="sr-only peer"
                                                 checked={isToggled}
-                                                onChange={handleToggle} // Updated to use handleToggle
+                                                onChange={handleToggle}
                                             />
                                             <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-red-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
                                         </label>
@@ -171,42 +241,15 @@ const Login = () => {
                                     </div>
 
                                     <div className='flex justify-center gap-2 mt-1.5'>
-                                        <button
-                                            type="button"
-                                            className='flex items-center justify-center px-2 py-1 border border-gray-200 rounded-full shadow-sm text-sm'
-                                        >
-                                            <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24">
-                                                <path
-                                                    fill="#4285F4"
-                                                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                                />
-                                                <path
-                                                    fill="#34A853"
-                                                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                                />
-                                                <path
-                                                    fill="#FBBC05"
-                                                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                                                />
-                                                <path
-                                                    fill="#EA4335"
-                                                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                                />
-                                            </svg>
-                                            Google
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className='flex items-center justify-center px-2 py-1 border border-gray-200 rounded-full shadow-sm text-sm'
-                                        >
-                                            <svg className="w-3 h-3 mr-1" viewBox="0 0 23 23">
-                                                <rect x="1" y="1" width="10" height="10" fill="#f25022" />
-                                                <rect x="12" y="1" width="10" height="10" fill="#7fba00" />
-                                                <rect x="1" y="12" width="10" height="10" fill="#00a4ef" />
-                                                <rect x="12" y="12" width="10" height="10" fill="#ffb900" />
-                                            </svg>
-                                            Microsoft
-                                        </button>
+                                        {/* Replace the Google button with Google OAuth Provider */}
+                                        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                                            <GoogleLogin
+                                                onSuccess={handleGoogleLoginSuccess}
+                                                onError={handleGoogleLoginError}
+                                                useOneTap
+                                                shape="pill"
+                                            />
+                                        </GoogleOAuthProvider>
                                     </div>
                                 </div>
                             </form>

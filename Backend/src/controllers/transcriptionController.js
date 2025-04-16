@@ -109,7 +109,7 @@ const translateText = asyncHandler(async (req, res) => {
     
     console.log(`Translating from ${sourceLang} to ${targetLang}`);
     
-    // Call MyMemory API - completely free for limited usage
+    // Call MyMemory API -- no API key required
     const response = await axios.get(
       `https://api.mymemory.translated.net/get`,
       {

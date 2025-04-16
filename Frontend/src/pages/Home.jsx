@@ -22,8 +22,8 @@ const Home = () => {
             neutral: 0,
             negative: 0
         },
-        npsScore: 45,
-        changePercentage: 15,
+        npsScore: 0,
+        changePercentage: 0,
         callHistory: null,
         sentimentTrends: []
     });
