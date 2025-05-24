@@ -209,7 +209,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Contributors
 
-(1) Nithiesh Naik (https://github.com/nithieshnaik/)
-(2) Narendra Lal (https://github.com/Narendra9906/)
-(3) Muskan Agarwal (https://github.com/muskanagarwal3110/)
-(4) Amit Rajput (https://github.com/amitrajput786)
+(1) Nithiesh Naik (https://github.com/nithieshnaik/) - 
+ Backend and UI/UX Designer 
+(2) Narendra Lal (https://github.com/Narendra9906/) -
+ Frontend 
+(3) Muskan Agarwal (https://github.com/muskanagarwal3110/) -
+ Frontend
+(4) Amit Rajput (https://github.com/amitrajput786) -
+ AI Models
+ 
